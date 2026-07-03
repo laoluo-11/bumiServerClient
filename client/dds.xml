@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CycloneDDS>
+    <Domain id="any">
+        <General>
+            <Transport>udp</Transport>
+            <AllowMulticast>false</AllowMulticast>
+        </General>
+        <Discovery>
+            <ParticipantIndex>auto</ParticipantIndex>
+            <Peers>
+                <Peer address="192.168.55.102"/>
+                <Peer address="127.0.0.1"/>
+            </Peers>
+        </Discovery>
+    </Domain>
+</CycloneDDS>
+

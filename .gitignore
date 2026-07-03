@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DDS runtime logs
+*.log
+
+# Compiled binaries — only track the .so files we explicitly include
+# (the two pyVoiceCtrl .so files are committed intentionally)

@@ -390,7 +390,7 @@ class BumiClient:
                     await self._send_asr(ws, text)
                 else:
                     # 中间结果（仅日志）
-                    log.debug(f"ASR 中间: {text}")
+                    log.info(f"ASR 中间: {text}")
         except (json.JSONDecodeError, IndexError):
             pass
 

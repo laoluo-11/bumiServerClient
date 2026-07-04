@@ -252,11 +252,11 @@ class BumiClient:
                 await self._connect_and_process()
                 reconnect_delay = RECONNECT_DELAY_INITIAL  # 正常断开，重置延迟
             except (websockets.exceptions.ConnectionClosed, OSError) as e:
-                log.warning(f"连接断开: {e}")
+                log.warning(f"连接断开 [{type(e).__name__}]: {e}")
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                log.error(f"连接异常: {e}")
+                log.error(f"连接异常 [{type(e).__name__}]: {e}")
 
             if not self._running:
                 break
@@ -373,7 +373,7 @@ class BumiClient:
                     log.debug(f"[{event_type}] {data[:100]}")
 
             except Exception as e:
-                log.error(f"处理 DDS 事件异常: {e}")
+                log.error(f"处理 DDS 事件异常 [{type(e).__name__}]: {e}")
 
     async def _handle_subtitle(self, ws: ClientConnection, data: str):
         """处理 ASR 字幕，转发给服务端"""

@@ -383,6 +383,11 @@ class BumiClient:
             if items:
                 text = items[0].get("text", "")
                 definite = items[0].get("definite", False)
+                user_id = items[0].get("userId", "")
+
+                # 过滤掉机器人自己的 TTS 字幕（userId 含 _ChatBot）
+                if "_ChatBot" in user_id:
+                    return
 
                 if definite:
                     # 最终识别结果 → 发送给 LLM 服务端

@@ -256,7 +256,7 @@ class ConversationManager:
             return await self._handle_tool_calls(client, ws, tool_calls_acc)
         elif full_text.strip():
             self.history.append({"role": "assistant", "content": full_text})
-            await self._safe_send(ws, {"type": "tts", "text": full_text, "interrupt": False})
+            await self._safe_send(ws, {"type": "tts", "text": full_text, "interrupt": True})
             return full_text
 
         return None
@@ -287,7 +287,7 @@ class ConversationManager:
         text = msg.content or ""
         if text.strip():
             self.history.append({"role": "assistant", "content": text})
-            await self._safe_send(ws, {"type": "tts", "text": text, "interrupt": False})
+            await self._safe_send(ws, {"type": "tts", "text": text, "interrupt": True})
         return text
 
     async def _handle_tool_calls(
@@ -346,7 +346,7 @@ class ConversationManager:
             text = response.choices[0].message.content or ""
             if text.strip():
                 self.history.append({"role": "assistant", "content": text})
-                await self._safe_send(ws, {"type": "tts", "text": text, "interrupt": False})
+                await self._safe_send(ws, {"type": "tts", "text": text, "interrupt": True})
             return text
         except Exception as e:
             log.error(f"[{self.robot_id}] tool-call 后续 LLM 失败: {e}")

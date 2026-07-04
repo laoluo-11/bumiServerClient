@@ -225,7 +225,9 @@ class BumiClient:
         self._running = False
         self._awakened = False
         self._llm_busy = False  # LLM 正在处理中，防止并发
-        self._pending_text = ""  # LLM 处理期间的积压文本
+        self._pending_queue: list[str] = []  # LLM 处理期间的积压文本队列
+        self._interrupted_this_round = False  # 当前轮次是否已打断
+        self._current_volume = 50  # 当前音量（初始值）
 
     async def run(self):
         """主入口：连接服务端 + 事件循环"""
@@ -239,9 +241,21 @@ class BumiClient:
         # 设置事件循环引用
         self.bridge.set_loop(asyncio.get_event_loop())
 
-        # 加载配置 + 唤醒
+        # 加载配置 + 削弱内置 LLM
         self.voice.load_configs()
         await asyncio.sleep(2)  # 等待配置生效
+
+        # 最小化内置 LLM，避免与外部 LLM 冲突
+        self.voice.set_llm_config(json.dumps({
+            "Mode": "ArkV3",
+            "ModelName": "doubao-seed-1-6-250615",
+            "SystemMessages": ["仅回复'嗯'"],
+            "HistoryLength": 0,
+            "Prefill": False,
+            "ThinkingType": "disabled",
+            "Tools": []
+        }))
+        await asyncio.sleep(1)
 
         self.voice.volume_set(10)
         await asyncio.sleep(1)
@@ -321,11 +335,10 @@ class BumiClient:
                     log.info(f"TTS: {text[:80]}...")
                     self.voice.tts_text(text, interrupt=interrupt)
                 self._llm_busy = False
-                # 处理 LLM 期间的积压文本
-                if self._pending_text:
-                    pending = self._pending_text
-                    self._pending_text = ""
-                    log.info(f"处理积压文本: {pending[:50]}")
+                # 处理 LLM 期间的积压文本（队列）
+                while self._pending_queue:
+                    pending = self._pending_queue.pop(0)
+                    log.info(f"处理积压文本(剩余{len(self._pending_queue)}): {pending[:50]}")
                     asyncio.create_task(self._send_asr(ws, pending))
 
             elif msg_type == "llm_stream":
@@ -402,23 +415,25 @@ class BumiClient:
                     return
 
                 if definite:
-                    # 第一时间打断豆包，阻止其生成/播放回复
+                    # 最终结果：打断豆包 + 发送给外部 LLM
+                    self._interrupted_this_round = False
                     self.voice.interrupt()
-                    # 最终识别结果 → 发送给 LLM 服务端
                     log.info(f"ASR 最终: {text}")
                     await self._send_asr(ws, text)
                 else:
-                    # 中间结果（仅日志）
+                    # 中间结果：提前打断豆包，减少内置 LLM 的无用工作
+                    if not self._interrupted_this_round:
+                        self.voice.interrupt()
+                        self._interrupted_this_round = True
                     log.info(f"ASR 中间: {text}")
         except (json.JSONDecodeError, IndexError):
             pass
 
     async def _send_asr(self, ws: ClientConnection, text: str):
-        """发送 ASR 结果到服务端"""
+        """发送 ASR 结果到服务端（带队列缓冲）"""
         if self._llm_busy:
-            # LLM 正在处理，积压此文本，等处理完再发
-            self._pending_text = text
-            log.info(f"LLM 忙碌，积压文本: {text[:50]}")
+            self._pending_queue.append(text)
+            log.info(f"LLM 忙碌，积压文本(idle_queue={len(self._pending_queue)}): {text[:50]}")
             return
 
         self._llm_busy = True
@@ -451,13 +466,14 @@ class BumiClient:
             await asyncio.sleep(1)
 
         elif cmd == "volume_up":
-            # 每次上调 10
-            self.voice.volume_set(min(100, 80))  # 简化：当前音量未知，固定设 80
-            log.info("音量已调大")
+            self._current_volume = min(100, self._current_volume + 10)
+            self.voice.volume_set(self._current_volume)
+            log.info(f"音量已调大 → {self._current_volume}")
 
         elif cmd == "volume_down":
-            self.voice.volume_set(30)
-            log.info("音量已调小")
+            self._current_volume = max(0, self._current_volume - 10)
+            self.voice.volume_set(self._current_volume)
+            log.info(f"音量已调小 → {self._current_volume}")
 
         elif cmd == "volume_to":
             vol = params.get("volume", 50)

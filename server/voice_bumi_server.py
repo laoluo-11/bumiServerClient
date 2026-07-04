@@ -37,7 +37,7 @@ SERVER_HOST = os.environ.get("BUMI_SERVER_HOST", "0.0.0.0")
 SERVER_PORT = int(os.environ.get("BUMI_SERVER_PORT", "8765"))
 
 LLM_BASE_URL = os.environ.get("BUMI_LLM_BASE_URL", "https://api.deepseek.com")
-LLM_API_KEY = os.environ.get("BUMI_LLM_API_KEY", os.environ.get("DEEPSEEK_API_KEY", ""))
+LLM_API_KEY=*** os.environ.get("BUMI_LLM_API_KEY", os.environ.get("DEEPSEEK_API_KEY", ""))
 LLM_MODEL = os.environ.get("BUMI_LLM_MODEL", "deepseek-chat")
 
 MAX_HISTORY = int(os.environ.get("BUMI_MAX_HISTORY", 20))

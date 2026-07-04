@@ -283,9 +283,10 @@ class BumiClient:
             await ws.send(json.dumps({"type": "hello", "robot_id": ROBOT_ID}, ensure_ascii=False))
 
             # 并行处理：接收服务端消息 + DDS 事件
-            async with asyncio.TaskGroup() as tg:
-                tg.create_task(self._recv_ws(ws))
-                tg.create_task(self._process_dds_events(ws))
+            await asyncio.gather(
+                self._recv_ws(ws),
+                self._process_dds_events(ws),
+            )
 
     async def _recv_ws(self, ws: ClientConnection):
         """接收服务端消息并执行"""

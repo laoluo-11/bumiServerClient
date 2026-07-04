@@ -149,6 +149,10 @@ class VoiceCtrl:
 
         log.info("DDS 初始化成功")
 
+        # 禁用自动运行，阻止豆包自动回复
+        self._ctrl.set_auto_running(False)
+        log.info("已禁用自动运行（阻止豆包自动回复）")
+
         # 注册事件回调
         self._ctrl.set_event_callback(self._on_event)
         log.info("事件回调已注册")
@@ -187,6 +191,14 @@ class VoiceCtrl:
     def volume_get(self) -> bool:
         """查询当前音量"""
         return self._ctrl.volume_get()
+
+    def interrupt(self) -> bool:
+        """打断当前对话（阻止豆包生成回复）"""
+        return self._ctrl.interrupt()
+
+    def set_auto_running(self, enable: bool) -> bool:
+        """设置是否自动运行（禁用可阻止豆包自动回复）"""
+        return self._ctrl.set_auto_running(enable)
 
     def audio_control(self, control_type: int) -> bool:
         """音频流控制"""
@@ -390,6 +402,8 @@ class BumiClient:
                     return
 
                 if definite:
+                    # 第一时间打断豆包，阻止其生成/播放回复
+                    self.voice.interrupt()
                     # 最终识别结果 → 发送给 LLM 服务端
                     log.info(f"ASR 最终: {text}")
                     await self._send_asr(ws, text)
